@@ -29,7 +29,7 @@ public class Server {
 
         public void run() {
             try(ServerSocket mySocket = new ServerSocket(portNumber);){
-                System.out.println("Server is waiting for a client!");
+                callback.accept("Server socket launched");
 
                 while(count < 2) {
                     ClientThread c = new ClientThread(mySocket.accept(), count);

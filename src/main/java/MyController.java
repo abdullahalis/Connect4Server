@@ -48,6 +48,7 @@ public class MyController implements Initializable {
 
     public void createServer() {
         infoList = new ListView<>();
+        infoList.getItems().add("hello");
         serverConnection = new Server(data -> {
             Platform.runLater(()->{
                 infoList.getItems().add(data.toString());
