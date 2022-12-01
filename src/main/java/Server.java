@@ -28,13 +28,17 @@ public class Server {
         info = new CFourInfo();
     }
 
+    // object telling client to wait for other players turn
     public CFourInfo waitInfo() {
         CFourInfo info = new CFourInfo();
         info.twoPlayers = true;
         info.turn = false;
+        info.moveRow = 10;
         return info;
     }
+
     public class TheServer extends Thread {
+        // create a server
         public void run() {
             try(ServerSocket mySocket = new ServerSocket(portNumber);){
                 callback.accept("Server socket launched");
@@ -78,16 +82,8 @@ public class Server {
             this.count = count;
         }
 
-//        public void updateClients(String message) {
-//            for(int i = 0; i < clients.size(); i++) {
-//                ClientThread t = clients.get(i);
-//                try {
-//                    t.out.writeObject(message);
-//                }
-//                catch(Exception e) {}
-//            }
-//        }
 
+        // handle new clients joining
         public void run(){
 
             try {
@@ -105,11 +101,10 @@ public class Server {
                 CFourInfo wait = new CFourInfo();
                 wait.twoPlayers = false;
                 wait.playerNum = 1;
-                wait.turn = true;
+                wait.turn = false;
                 wait.gameStarted = false;
                 try {
                     p1Thread.out.writeObject(wait);
-//                    p1Thread.out.writeObject("Waiting for second client to join...");
                 }
                 catch (Exception e) {
                     System.out.println("couldn't write");
@@ -119,22 +114,17 @@ public class Server {
 
             // if two players have joined
             if (count == 2) {
-//                try {
-//                    p1Thread.out.writeObject("Second player has joined. Game will now start!");
-//                    p2Thread.out.writeObject("Game will start shortly.");
-//                }
-//                catch(Exception e) {
-//                    System.out.println("couldn't write");
-//                }
                 CFourInfo begin1 = new CFourInfo();
                 begin1.twoPlayers = true;
                 begin1.playerNum = 1;
                 begin1.turn = true;
+                begin1.gameStarted = false;
 
                 CFourInfo begin2 = new CFourInfo();
                 begin2.twoPlayers = true;
                 begin2.playerNum = 1;
                 begin2.turn = false;
+                begin2.gameStarted = false;
                 try {
                     p1Thread.out.writeObject(begin1);
                     p2Thread.out.writeObject(begin2);
@@ -145,36 +135,57 @@ public class Server {
             }
 
 
-
+            // handle objects that get sent back
             while(true) {
                 try {
                     CFourInfo cInfo = (CFourInfo) in.readObject();
                     // if move came from player 1
                     if (cInfo.playerNum == 1) {
                         callback.accept("Player 1 made a move: row " + cInfo.moveRow + ", col " + cInfo.moveCol);
-                        if (cInfo.won) {
 
-                        }
                         // send p1 move to p2
                         CFourInfo p1Move = new CFourInfo(true, 2, true, false, cInfo.moveRow, cInfo.moveCol, true);
                         p2Thread.out.writeObject(p1Move);
 
                         // tell p1 to wait
                         p1Thread.out.writeObject(waitInfo());
+
                     }
-
                     // if move came from player 2
-                    if (cInfo.playerNum == 2) {
+                    else {
                         callback.accept("Player 2 made a move: row " + cInfo.moveRow + ", col " + cInfo.moveCol);
-
                         // send p2 move to p1
                         CFourInfo p2Move = new CFourInfo(true, 1, true, false, cInfo.moveRow, cInfo.moveCol, true);
                         p1Thread.out.writeObject(p2Move);
 
                         // tell p2 to wait
                         p2Thread.out.writeObject(waitInfo());
+                        }
+
+                    // if a player won
+                    if (cInfo.won) {
+                        CFourInfo youWon = new CFourInfo();
+                        youWon.gameOver = true;
+                        youWon.won = true;
+                        youWon.twoPlayers = true;
+                        CFourInfo youLose = new CFourInfo();
+                        youLose.gameOver = true;
+                        youLose.won = false;
+                        youWon.twoPlayers = true;
+
+                        if (cInfo.playerNum == 1) {
+                            callback.accept("Player 1 won!");
+                            p1Thread.out.writeObject(youWon);
+                            p2Thread.out.writeObject(youLose);
+                        }
+                        else {
+                            callback.accept("Player 2 won!");
+                            p1Thread.out.writeObject(youLose);
+                            p2Thread.out.writeObject(youWon);
+                        }
                     }
                 }
+
                 catch(Exception e) {
                     try {
                         p1Thread.out.writeObject("Other player left");
