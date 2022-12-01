@@ -9,7 +9,7 @@
 
 <VBox xmlns:fx="http://javafx.com/fxml/1" styleClass="vbox" fx:controller = "MyController"
       fx:id = "root" alignment="CENTER">
-    <Text text="Enter a port number" fx:id="title"></Text>
+    <Text text="Enter a port number" fx:id="title" ></Text>
     <TextField fx:id="portField"></TextField>
     <Button fx:id="submitButton" text="Submit" onAction="#setPort"></Button>
 </VBox>

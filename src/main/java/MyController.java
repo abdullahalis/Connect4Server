@@ -43,14 +43,15 @@ public class MyController implements Initializable {
         Parent root2 = loader.load(); //load view into parent
         root2.getStylesheets().add("/styles/ServerStart");//set style
         root.getScene().setRoot(root2);//update scene graph
-        createServer();
+
     }
 
-    public void createServer() {
+    public void createServer(ActionEvent e) throws IOException{
         infoList = new ListView<>();
         infoList.getItems().add("hello");
         serverConnection = new Server(data -> {
-            Platform.runLater(()->{
+            Platform.runLater(()-> {
+                // instance of data
                 infoList.getItems().add(data.toString());
             });
         }, portNumber);

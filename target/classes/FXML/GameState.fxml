@@ -9,6 +9,7 @@
 
 <VBox xmlns:fx="http://javafx.com/fxml/1" styleClass="vbox" fx:controller = "MyController"
       fx:id = "root" alignment="CENTER">
+    <Button fx:id="startServerButton" text="Start Server" onAction="#createServer"></Button>
     <Text text="Game State" fx:id="title"></Text>
     <ListView fx:id="infoList"></ListView>
 </VBox>

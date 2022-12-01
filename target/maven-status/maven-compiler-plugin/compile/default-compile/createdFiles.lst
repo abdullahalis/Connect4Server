@@ -2,6 +2,7 @@ CFourInfo.class
 Client.class
 Server$ClientThread.class
 Server.class
+ServerGUI.class
 MyController.class
-JavaFXTemplate.class
 Server$TheServer.class
+ServerGUI$1.class
