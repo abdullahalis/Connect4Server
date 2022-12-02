@@ -10,8 +10,10 @@ public class Server {
     private int count;
     private int portNumber;
     private ClientThread p1Thread;
+    Boolean p1Exists;
     private Boolean p1Turn;
     private ClientThread p2Thread;
+    Boolean p2Exists;
     private Boolean p2Turn;
     private TheServer server;
     private Consumer<Serializable> callback;
@@ -26,6 +28,8 @@ public class Server {
         server.start();
         count = 1;
         info = new CFourInfo();
+        p1Exists = false;
+        p2Exists = false;
     }
 
     // object telling client to wait for other players turn
@@ -48,17 +52,35 @@ public class Server {
                     callback.accept("client #" + count + " has connected to server");
                     clients.add(c);
 
-                    if (clients.size() == 1) {
+                    // if only one client is present
+                    if ((clients.size() == 1)) {
                         callback.accept("Waiting for second player");
-                        p1Thread = c;
-                        info.twoPlayers = false;
+                        if (!p1Exists) {
+                            p1Thread = c;
+                            p1Exists = true;
+                            callback.accept("client #" + count + " set to Player 1");
+                        }
+                        else {
+                            p2Thread = c;
+                            p2Exists = true;
+                            callback.accept("client #" + count + " set to Player 2");
+                        }
                     }
+
+                    // if second client has joined
                     else if (clients.size() == 2) {
                         callback.accept("Both players are here! Game will now begin");
                         info.twoPlayers = true;
-                        p2Thread = c;
-                        p1Turn = true;
-                        p2Turn = false;
+                        if (!p1Exists) {
+                            p1Thread = c;
+                            p1Exists = true;
+                            callback.accept("client #" + count + " set to Player 1");
+                        }
+                        else {
+                            p2Thread = c;
+                            p2Exists = true;
+                            callback.accept("client #" + count + " set to Player 2");
+                        }
                     }
                     c.start();
                     count++;
@@ -82,10 +104,8 @@ public class Server {
             this.count = count;
         }
 
-
         // handle new clients joining
         public void run(){
-
             try {
                 in = new ObjectInputStream(connection.getInputStream());
                 out = new ObjectOutputStream(connection.getOutputStream());
@@ -96,24 +116,38 @@ public class Server {
             }
 
             // if there's only one client send a message to wait
-            if (count == 1) {
-                System.out.println("one player");
+            if (clients.size() == 1) {
+                // tell client they need to wait for second player
                 CFourInfo wait = new CFourInfo();
                 wait.twoPlayers = false;
                 wait.playerNum = 1;
                 wait.turn = false;
                 wait.gameStarted = false;
-                try {
-                    p1Thread.out.writeObject(wait);
+
+                if (!p2Exists) {
+                    try {
+                        p1Thread.out.writeObject(wait);
+                    }
+                    catch (Exception e) {
+                        System.out.println("couldn't write");
+                        e.printStackTrace();
+                    }
                 }
-                catch (Exception e) {
-                    System.out.println("couldn't write");
-                    e.printStackTrace();
+                else {
+                    try {
+                        p2Thread.out.writeObject(wait);
+                    }
+                    catch (Exception e) {
+                        System.out.println("couldn't write");
+                        e.printStackTrace();
+                    }
                 }
+
             }
 
             // if two players have joined
-            if (count == 2) {
+            if (clients.size() == 2) {
+                // tell players the game is starting
                 CFourInfo begin1 = new CFourInfo();
                 begin1.twoPlayers = true;
                 begin1.playerNum = 1;
@@ -133,7 +167,6 @@ public class Server {
                     System.out.println("couldn't write");
                 }
             }
-
 
             // handle objects that get sent back
             while(true) {
@@ -168,10 +201,15 @@ public class Server {
                         youWon.gameOver = true;
                         youWon.won = true;
                         youWon.twoPlayers = true;
+                        youWon.moveRow = cInfo.moveRow;
+                        youWon.moveCol = cInfo.moveCol;
+
                         CFourInfo youLose = new CFourInfo();
                         youLose.gameOver = true;
                         youLose.won = false;
-                        youWon.twoPlayers = true;
+                        youLose.twoPlayers = true;
+                        youLose.moveRow = cInfo.moveRow;
+                        youLose.moveCol = cInfo.moveCol;
 
                         if (cInfo.playerNum == 1) {
                             callback.accept("Player 1 won!");
@@ -187,29 +225,26 @@ public class Server {
                 }
 
                 catch(Exception e) {
+                    CFourInfo emptyObject = new CFourInfo();
                     try {
-                        p1Thread.out.writeObject("Other player left");
-                        clients.remove(p1Thread);
+                        // if we can write an obejct to p1Thread then the exception was caused by Player 2 leaving
+                        p1Thread.out.writeObject("testing");
+                        clients.remove(p2Thread);
+                        p2Exists = false;
                         callback.accept("Player 2 has left the game");
                     }
                     catch (Exception d) {
                         try {
-                            p2Thread.out.writeObject("Other player left");
-                            clients.remove(p2Thread);
+                            p2Thread.out.writeObject("testing");
+                            clients.remove(p1Thread);
+                            p1Exists = false;
                             callback.accept("Player 1 has left the game");
                         }
                         catch(Exception f) {}
                     }
-                    //callback.accept("OOOOPPs...Something wrong with the socket from client: " + count + "....closing down!");
-                    count--;
                     break;
                 }
             }
         }//end of run
-
     }//end of client thread
-
-    public int getCount() {
-        return count;
-    }
 }
