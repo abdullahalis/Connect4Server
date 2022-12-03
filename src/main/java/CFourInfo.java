@@ -10,6 +10,7 @@ public class CFourInfo implements Serializable {
     Boolean gameStarted;
 
     Boolean gameOver;
+    Boolean restart;
 
 
     public CFourInfo() {
@@ -21,6 +22,7 @@ public class CFourInfo implements Serializable {
         moveCol = -1;
         gameStarted = false;
         gameOver = false;
+        restart = false;
     }
 
 

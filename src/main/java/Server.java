@@ -20,7 +20,6 @@ public class Server {
     ArrayList<ClientThread> clients = new ArrayList<ClientThread>();
     CFourInfo info;
 
-
     Server(Consumer<Serializable> call, int portNumber) {
         this.portNumber = portNumber;
         callback = call;
@@ -81,6 +80,8 @@ public class Server {
                             p2Exists = true;
                             callback.accept("client #" + count + " set to Player 2");
                         }
+                        p1Thread = clients.get(0);
+                        p2Thread = clients.get(1);
                     }
                     c.start();
                     count++;
@@ -114,7 +115,7 @@ public class Server {
             catch(Exception e) {
                 System.out.println("Streams not open");
             }
-
+            
             // if there's only one client send a message to wait
             if (clients.size() == 1) {
                 // tell client they need to wait for second player
@@ -164,7 +165,6 @@ public class Server {
                     p2Thread.out.writeObject(begin2);
                 }
                 catch (Exception e) {
-                    System.out.println("couldn't write");
                 }
             }
 
@@ -182,7 +182,6 @@ public class Server {
 
                         // tell p1 to wait
                         p1Thread.out.writeObject(waitInfo());
-
                     }
                     // if move came from player 2
                     else {
@@ -193,7 +192,7 @@ public class Server {
 
                         // tell p2 to wait
                         p2Thread.out.writeObject(waitInfo());
-                        }
+                    }
 
                     // if a player won
                     if (cInfo.won) {
@@ -225,23 +224,10 @@ public class Server {
                 }
 
                 catch(Exception e) {
-                    CFourInfo emptyObject = new CFourInfo();
-                    try {
-                        // if we can write an obejct to p1Thread then the exception was caused by Player 2 leaving
-                        p1Thread.out.writeObject("testing");
-                        clients.remove(p2Thread);
-                        p2Exists = false;
-                        callback.accept("Player 2 has left the game");
-                    }
-                    catch (Exception d) {
-                        try {
-                            p2Thread.out.writeObject("testing");
-                            clients.remove(p1Thread);
-                            p1Exists = false;
-                            callback.accept("Player 1 has left the game");
-                        }
-                        catch(Exception f) {}
-                    }
+                    count--;
+                    callback.accept("OOOOPPs...Something wrong with the socket from client: " + count + "....closing down!");
+
+                    clients.remove(this);
                     break;
                 }
             }
